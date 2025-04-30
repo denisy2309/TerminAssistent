@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n Chat & Voice</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="page-wrapper"> <!-- Overall wrapper -->
+    <h1>Dein Terminplanungsassistent</h1>
+
+    <!-- Removed main-content wrapper -->
+    <div id="chat-container">
+        <div id="info-box"> <!-- Moved Info Box to be child of chat-container -->
+            <span class="info-icon">ℹ️</span>
+            <p>Sei geduldig, der Assistent kann einige Sekunden Denkzeit für seine Antwort brauchen.</p>
+        </div>
+        <div id="chat-output">
+            <!-- Chat messages will appear here (Text Mode) -->
+        </div>
+        <div id="voice-status-display">
+                 <!-- Voice status indicators will appear here -->
+                 <span class="indicator" id="indicator-listening">🎤</span>
+                 <span class="indicator" id="indicator-thinking">🤔</span>
+                 <span class="indicator" id="indicator-speaking">🔊</span>
+                 <span class="indicator" id="indicator-idle">🟢</span> <!-- For idle state after greeting -->
+            </div>
+            <div id="input-area">
+                <input type="text" id="text-input" placeholder="Nachricht eingeben...">
+                <button id="send-button">Senden ➤</button>
+                <select id="language-select" title="Sprache wählen">
+                    <option value="de-DE">🇩🇪 Deutsch</option>
+                    <option value="en-US">🇺🇸 English (US)</option>
+                    <option value="tr-TR">🇹🇷 Türkçe</option>
+                    <option value="ar-SA">🇸🇦 العربية (SA)</option>
+                    <!-- Add other languages/dialects as needed -->
+                </select>
+                <button id="enter-voice-mode-button">🎤 Sprachmodus</button>
+                <button id="start-conversation-button">🟢 Gespräch beginnen</button>
+                <button id="stop-conversation-button">🔴 Gespräch beenden</button>
+                <button id="back-to-text-button">⌨️ Zurück zum Text</button>
+                <p id="status">...</p>
+            </div>
+        </div>
+    <!-- Info box moved -->
+
+    <script src="script.js"></script>
+</div> <!-- Close page-wrapper -->
+</body>
+</html>
