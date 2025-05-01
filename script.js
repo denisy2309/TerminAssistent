@@ -269,10 +269,15 @@ async function handleSend(text, isFromVoice = false) {
         if (!isFromVoice) {
             addMessageToChat(botResponseText, 'bot');
         } else {
-            const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
+            // Determine API Key based on language
+            const selectedLang = languageSelect.value;
+            const apiKeyToUse = (selectedLang.startsWith('ar') || selectedLang.startsWith('ru') || selectedLang.startsWith('uk'))
+                                ? ELEVENLABS_API_KEY_ARABIC
+                                : ELEVENLABS_API_KEY_DEFAULT;
+
             if (apiKeyToUse) {
                  try {
-                     await speakText(botResponseText, apiKeyToUse);
+                     await speakText(botResponseText, apiKeyToUse); // Pass API key to speakText
                      if (currentMode === 'voiceActive') {
                          console.log("TTS finished, enabling restart flag.");
                          allowRecognitionRestart = true;
@@ -336,13 +341,18 @@ function speakText(text, apiKey) {
 
         const selectedLang = languageSelect.value;
         let voiceId;
+        // Select Voice ID based on language
         if (selectedLang.startsWith('en')) {
-            voiceId = 'uYXf8XasLslADfZ2MB4u';
+            voiceId = 'uYXf8XasLslADfZ2MB4u'; // English
         } else if (selectedLang.startsWith('tr')) {
-            voiceId = '5RqXmIU9ikjifeWoXHMG';
+            voiceId = '5RqXmIU9ikjifeWoXHMG'; // Turkish
         } else if (selectedLang.startsWith('ar')) {
-            voiceId = 'VMy40598IGgDeaOE8phq'; // Using the first Arabic ID again
-        } else {
+            voiceId = 'VMy40598IGgDeaOE8phq'; // Arabic
+        } else if (selectedLang.startsWith('ru')) {
+            voiceId = 'aG9q1I1wTbfHh5sbpJnp'; // Russian
+        } else if (selectedLang.startsWith('uk')) {
+            voiceId = 'Ntd0iVwICtUtA6Fvx27M'; // Ukrainian
+        } else { // Default to German
             voiceId = ELEVENLABS_VOICE_ID_DEFAULT;
         }
         console.log(`Using Voice ID: ${voiceId} for language: ${selectedLang}`);
