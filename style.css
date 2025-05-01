@@ -172,9 +172,9 @@ textarea#text-input {
     margin-right: 10px;
     font-size: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match output font */
-    resize: none; /* Prevent manual resizing */
+    resize: none !important; /* Prevent manual resizing (force) */
     overflow-y: auto; /* Allow vertical scrolling */
-    height: 80px; /* Maximum height before scrolling */
+    max-height: 80px; /* Maximum height before scrolling */
     /* min-height: 40px; /* REMOVED - Prevent auto-resizing */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* REMOVED height transition */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
