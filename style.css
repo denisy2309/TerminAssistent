@@ -164,7 +164,7 @@ h1 {
     margin-right: 5px; /* Add some space before next button */
 }
 
-#text-input {
+textarea#text-input {
     flex-grow: 1;
     padding: 12px 15px;
     border: 1px solid #ced4da;
@@ -173,7 +173,7 @@ h1 {
     font-size: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match output font */
     resize: vertical; /* Prevent resizing */
-    overflow-y: auto; /* Allow vertical scrolling */
+    overflow-y: hidden; /* Allow vertical scrolling */
     overflow: hidden;
     max-height: 80px; /* Fixed height */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
