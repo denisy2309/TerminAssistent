@@ -202,12 +202,6 @@ function addMessageToChat(text, sender) {
     }
 }
 
-const textarea = document.getElementById('text-input');
-textarea.addEventListener('input', () => {
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
-});
-
 function showTypingIndicator(show) {
     if (show && currentMode === 'text') {
         if (!typingIndicatorElement) {
