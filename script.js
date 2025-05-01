@@ -377,7 +377,16 @@ function speakText(text, apiKey) {
                 elevenLabsController = null; // Clear controller on playback error
                 reject(new Error('Audio playback error'));
             };
-            currentAudio.play();
+            currentAudio.play().catch(playError => {
+                console.error('Audio play() failed:', playError);
+                URL.revokeObjectURL(audioUrl);
+                statusElement.textContent = 'Audio Wiedergabefehler (Play).';
+                statusElement.className = 'error';
+                voiceStatusDisplay.className = 'error';
+                currentAudio = null;
+                elevenLabsController = null; // Clear controller on playback error
+                reject(new Error('Audio play() failed'));
+            });
         } catch (error) {
             // Check if the error was due to abortion
             if (error.name === 'AbortError') {
