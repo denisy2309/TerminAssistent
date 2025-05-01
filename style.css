@@ -395,6 +395,8 @@ button:disabled {
 #info-box { /* Show info box in text mode */
     display: flex;
 }
+/* Text mode elements' visibility is handled by hiding voice-mode specific elements */
+/* and ensuring #chat-output is visible (already done above) */
 
 
 /* Voice Mode Idle (Ready to start conversation) */
