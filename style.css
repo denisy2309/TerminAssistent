@@ -173,14 +173,27 @@ textarea#text-input {
     font-size: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match output font */
     resize: none; /* Prevent resizing */
-    overflow-y: scroll; /* Allow vertical scrolling */
-    max-height: 80px; /* Fixed height */
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow-y: auto; /* Allow vertical scrolling */
+    max-height: 80px; /* Maximum height before scrolling */
+    min-height: 40px; /* Minimum height */
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, height 0.2s ease-in-out; /* Add height to transition */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     word-wrap: break-word; /* Enable word wrapping */
     overflow-wrap: break-word; /* Ensure long words break */
     min-width: 0; /* Allow the item to shrink below its content size */
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+#text-input::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+#text-input {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 #text-input:focus {
     border-color: #80bdff;
     outline: 0;
