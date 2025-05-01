@@ -185,13 +185,13 @@ textarea#text-input {
 
 /* Hide scrollbar for Chrome, Safari and Opera */
 #text-input::-webkit-scrollbar {
-    display: none;
+    display: internal;
 }
 
 /* Hide scrollbar for IE, Edge and Firefox */
 #text-input {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: internal;  /* IE and Edge */
+  scrollbar-width: internal;  /* Firefox */
 }
 
 #text-input:focus {
