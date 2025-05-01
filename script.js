@@ -74,12 +74,11 @@ if (SpeechRecognition) {
                     console.log('Executing auto-restart recognition');
                     startRecognition();
                 } else {
-                     console.log('Auto-restart cancelled, mode changed.');
+                    console.log('Auto-restart cancelled, mode changed.');
                 }
                 restartTimeoutId = null;
             }, 150);
         }
-        // Do not reset status display here if restart not allowed
     };
 
     recognition.onerror = (event) => {
@@ -91,7 +90,7 @@ if (SpeechRecognition) {
             statusElement.className = 'error';
             voiceStatusDisplay.className = 'error';
         } else {
-             setUIMode('text');
+            setUIMode('text');
         }
     };
 
@@ -100,95 +99,6 @@ if (SpeechRecognition) {
     if(enterVoiceModeButton) enterVoiceModeButton.disabled = true;
     if(startConversationButton) startConversationButton.disabled = true;
     if(stopConversationButton) stopConversationButton.disabled = true;
-}
-
-// --- Permissions Check ---
-async function checkMicPermission() {
-    if (!navigator.permissions || !enterVoiceModeButton) {
-        console.warn('Permissions API not supported or button not found.');
-        return;
-    }
-    try {
-        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
-        console.log('Microphone permission status:', permissionStatus.state);
-
-        if (permissionStatus.state === 'denied') {
-            enterVoiceModeButton.disabled = true;
-            enterVoiceModeButton.textContent = 'Mikrofon blockiert';
-            statusElement.textContent = 'Mikrofonzugriff blockiert. Bitte in Browsereinstellungen ändern.';
-            statusElement.className = 'error';
-            statusElement.style.display = 'inline';
-        } else {
-            enterVoiceModeButton.disabled = false;
-        }
-
-        permissionStatus.onchange = () => {
-            console.log('Microphone permission status changed to:', permissionStatus.state);
-             if (permissionStatus.state === 'denied') {
-                enterVoiceModeButton.disabled = true;
-                enterVoiceModeButton.textContent = 'Mikrofon blockiert';
-                if(currentMode !== 'text') {
-                    setUIMode('text');
-                }
-            } else {
-                 enterVoiceModeButton.disabled = false;
-                 enterVoiceModeButton.textContent = '🎤 Sprachmodus';
-            }
-        };
-
-    } catch (error) {
-        console.error('Error checking microphone permission:', error);
-    }
-}
-
-// --- Start/Stop Recognition ---
-function startRecognition() {
-    if (recognition && !isRecognizing && currentMode === 'voiceActive') {
-        try {
-            recognition.lang = languageSelect.value;
-            console.log(`Setting recognition language to: ${recognition.lang}`);
-            allowRecognitionRestart = false;
-            console.log("Attempting recognition.start()...");
-            recognition.start();
-        } catch (error) {
-            console.error("Error starting recognition:", error);
-             statusElement.textContent = `Fehler beim Start: ${error.message}`;
-             statusElement.className = 'error';
-             voiceStatusDisplay.className = 'error';
-             isRecognizing = false;
-        }
-    } else {
-        console.log("StartRecognition called but conditions not met (isRecognizing:", isRecognizing, "currentMode:", currentMode, ")");
-    }
-}
-
-// Function to stop current TTS playback
-function stopCurrentSpeech() {
-    if (currentAudio) {
-        console.log("Stopping current speech playback.");
-        currentAudio.pause();
-        currentAudio.src = '';
-        currentAudio = null;
-    }
-    // Also abort any pending fetch request
-    if (elevenLabsController) {
-        console.log("Aborting pending ElevenLabs fetch request.");
-        elevenLabsController.abort();
-        elevenLabsController = null;
-    }
-}
-
-function stopRecognition() {
-     if (restartTimeoutId) {
-        clearTimeout(restartTimeoutId);
-        restartTimeoutId = null;
-     }
-     if (recognition && isRecognizing) {
-        console.log("Attempting recognition.stop()...");
-        allowRecognitionRestart = false;
-        recognition.stop();
-    }
-    isRecognizing = false;
 }
 
 // --- Core Functions ---
@@ -225,274 +135,58 @@ async function handleSend(text, isFromVoice = false) {
     if (!isFromVoice) {
         addMessageToChat(text, 'user');
         textInput.value = '';
-        // Remove inline height style and then set to auto to force recalculation
         textInput.style.removeProperty('height');
         textInput.style.height = 'auto';
+        textInput.blur(); // <-- Added to reset focus/height correctly
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
         statusElement.className = 'thinking';
         voiceStatusDisplay.className = 'thinking';
-        console.log("Set voiceStatusDisplay class to: thinking");
         allowRecognitionRestart = false;
     }
 
     try {
-        console.log(`Sending to n8n (${isFromVoice ? 'voice' : 'text'}):`, text);
         const response = await fetch(N8N_WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chatInput: text, sessionId: sessionId }),
         });
 
-        if (!isFromVoice) { showTypingIndicator(false); }
+        if (!isFromVoice) showTypingIndicator(false);
 
-        if (!response.ok) { throw new Error(`n8n request failed with status ${response.status}`); }
+        if (!response.ok) throw new Error(`n8n request failed with status ${response.status}`);
+
         const result = await response.json();
         const botResponseText = result.output;
-        if (!botResponseText) { throw new Error('n8n response did not contain an "output" field.'); }
-        console.log('Received from n8n:', botResponseText);
+        if (!botResponseText) throw new Error('n8n response did not contain an "output" field.');
 
         if (!isFromVoice) {
             addMessageToChat(botResponseText, 'bot');
-        } else {
-            const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
-            if (apiKeyToUse) {
-                 try {
-                     await speakText(botResponseText, apiKeyToUse);
-                     if (currentMode === 'voiceActive') {
-                         console.log("TTS finished, enabling restart flag.");
-                         allowRecognitionRestart = true;
-                         if (!isRecognizing) {
-                             console.log("Recognition already ended, manually triggering onend for restart check.");
-                             recognition.onend();
-                         }
-                     }
-                 } catch (ttsError) {
-                     console.error("TTS Error occurred:", ttsError);
-                     if (currentMode === 'voiceActive') {
-                         allowRecognitionRestart = false;
-                         statusElement.textContent = 'TTS Fehler. Klicken zum Beenden/Neustarten.';
-                         statusElement.className = 'error';
-                         voiceStatusDisplay.className = 'error';
-                     }
-                 }
-            } else {
-                console.warn('ElevenLabs API Key not set for this language. Skipping TTS.');
-                if (currentMode === 'voiceActive') {
-                     allowRecognitionRestart = true;
-                     if (!isRecognizing) { recognition.onend(); }
-                }
-            }
         }
+
     } catch (error) {
         console.error('Error sending/receiving message:', error);
         if (!isFromVoice) {
-             showTypingIndicator(false);
+            showTypingIndicator(false);
             addMessageToChat(`Fehler: ${error.message}`, 'bot');
         } else {
-             allowRecognitionRestart = false;
-             statusElement.textContent = `n8n Fehler: ${error.message}. Klicken zum Beenden/Neustarten.`;
-             statusElement.className = 'error';
-             voiceStatusDisplay.className = 'error';
+            allowRecognitionRestart = false;
+            statusElement.textContent = `n8n Fehler: ${error.message}. Klicken zum Beenden/Neustarten.`;
+            statusElement.className = 'error';
+            voiceStatusDisplay.className = 'error';
         }
     }
 }
 
-function speakText(text, apiKey) {
-    return new Promise(async (resolve, reject) => {
-        stopCurrentSpeech(); // Stop any previous speech or pending request
-
-        elevenLabsController = new AbortController(); // Create a new controller for this request
-        const signal = elevenLabsController.signal;
-
-        const selectedLang = languageSelect.value;
-        let voiceId;
-        if (selectedLang.startsWith('en')) {
-            voiceId = 'uYXf8XasLslADfZ2MB4u';
-        } else if (selectedLang.startsWith('tr')) {
-            voiceId = '5RqXmIU9ikjifeWoXHMG';
-        } else if (selectedLang.startsWith('ar')) {
-            voiceId = 'VMy40598IGgDeaOE8phq'; // Using the first Arabic ID again
-        } else {
-            voiceId = ELEVENLABS_VOICE_ID_DEFAULT;
-        }
-        console.log(`Using Voice ID: ${voiceId} for language: ${selectedLang}`);
-
-        const modelId = 'eleven_multilingual_v2';
-        console.log(`Using Model ID: ${modelId}`);
-
-        const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-        const headers = {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey,
-        };
-        const data = {
-            text: text,
-            model_id: modelId,
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-        };
-
-        try {
-            console.log('Sending to ElevenLabs:', text);
-            statusElement.textContent = 'Spreche...';
-            statusElement.className = 'speaking';
-            voiceStatusDisplay.className = 'speaking';
-            console.log("Set voiceStatusDisplay class to: speaking");
-
-            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data), signal: signal }); // Pass the signal
-
-            if (!response.ok) {
-                let errorBody = 'Unknown error';
-                try { errorBody = (await response.json()).detail || response.statusText; } catch (e) { errorBody = response.statusText; }
-                throw new Error(`ElevenLabs request failed: ${response.status} ${errorBody}`);
-            }
-
-            const audioBlob = await response.blob();
-            if (selectedLang.startsWith('ar')) {
-                console.log(`Arabic TTS Blob received: Size=${audioBlob.size}, Type=${audioBlob.type}`);
-                if (audioBlob.size < 100) { console.warn("Received very small audio blob for Arabic."); }
-            }
-            const audioUrl = URL.createObjectURL(audioBlob);
-            currentAudio = new Audio(audioUrl);
-            console.log('Playing audio from ElevenLabs');
-
-            currentAudio.onended = () => {
-                console.log('Audio playback finished.');
-                URL.revokeObjectURL(audioUrl);
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller after successful playback
-                resolve();
-            };
-            currentAudio.onerror = (err) => {
-                console.error('Audio playback error:', err);
-                URL.revokeObjectURL(audioUrl);
-                statusElement.textContent = 'Audio Wiedergabefehler.';
-                statusElement.className = 'error';
-                voiceStatusDisplay.className = 'error';
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller on playback error
-                reject(new Error('Audio playback error'));
-            };
-            currentAudio.play();
-        } catch (error) {
-            // Check if the error was due to abortion
-            if (error.name === 'AbortError') {
-                console.log('ElevenLabs fetch request aborted.');
-                elevenLabsController = null; // Clear controller after abortion
-                resolve(); // Resolve the promise as the action was successful (aborted)
-            } else {
-                console.error('Error calling ElevenLabs API:', error);
-                statusElement.textContent = 'TTS API Fehler.';
-                statusElement.className = 'error';
-                voiceStatusDisplay.className = 'error';
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller on other errors
-                console.error("ElevenLabs API Error Object:", error);
-                reject(error);
-            }
-        }
-    });
-}
-
-// --- UI Mode Management & Event Listeners ---
-function setUIMode(newMode) {
-    console.log(`Setting UI Mode: ${newMode}`);
-    const oldMode = currentMode;
-    currentMode = newMode;
-    document.body.className = '';
-
-    switch (newMode) {
-        case 'text':
-            document.body.classList.add('text-mode');
-            if (oldMode !== 'text') {
-                 stopCurrentSpeech(); // Stop speech and pending requests
-                 stopRecognition();
-            }
-            allowRecognitionRestart = false; isRecognizing = false;
-            statusElement.style.display = 'none';
-            voiceStatusDisplay.className = '';
-            break;
-        case 'voiceIdle':
-            document.body.classList.add('voice-mode-idle');
-            statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
-            statusElement.className = '';
-            voiceStatusDisplay.className = 'idle';
-            if (oldMode !== 'voiceIdle') {
-                 stopCurrentSpeech(); // Stop speech and pending requests
-                 stopRecognition();
-            }
-            allowRecognitionRestart = false; isRecognizing = false;
-            break;
-        case 'voiceActive':
-            document.body.classList.add('voice-mode-active');
-            break;
-    }
-}
-
-// --- Attach Event Listeners ---
+// --- Event Listener for Sending ---
 sendButton.addEventListener('click', () => handleSend(textInput.value));
-textInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') handleSend(textInput.value); });
+textInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') handleSend(textInput.value);
+});
 
-// Auto-resize textarea based on content
+// --- Auto-resize textarea ---
 textInput.addEventListener('input', () => {
-    textInput.style.height = 'auto'; // Reset height to recalculate
-    textInput.style.height = textInput.scrollHeight + 'px'; // Set height based on content scroll height
+    textInput.style.height = 'auto';
+    textInput.style.height = textInput.scrollHeight + 'px';
 });
-
-
-enterVoiceModeButton.addEventListener('click', async () => {
-    if (!recognition || currentMode !== 'text') return;
-    setUIMode('voiceIdle');
-    const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
-    const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
-    try {
-        console.log("Attempting to speak greeting on entering voice mode...");
-        await speakText(greeting, apiKeyToUse);
-        console.log("Greeting finished speaking.");
-        if (currentMode === 'voiceIdle') {
-             statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
-             statusElement.className = '';
-             voiceStatusDisplay.className = 'idle';
-        }
-    } catch (error) {
-         console.error("Error during initial greeting:", error);
-         statusElement.textContent = 'Fehler bei Begrüßung. Zurück zum Text?';
-         statusElement.className = 'error';
-         voiceStatusDisplay.className = 'error';
-    }
-});
-
-startConversationButton.addEventListener('click', () => {
-    if (!recognition || currentMode !== 'voiceIdle') return;
-    setUIMode('voiceActive');
-    console.log("Green button clicked, starting recognition for user's first turn...");
-    startRecognition();
-});
-
-stopConversationButton.addEventListener('click', () => {
-    if (currentMode !== 'voiceActive') return;
-    console.log("Stop conversation button clicked");
-    allowRecognitionRestart = false;
-    stopCurrentSpeech(); // Stop TTS if playing or pending
-    stopRecognition();
-    setUIMode('voiceIdle');
-});
-
-backToTextButton.addEventListener('click', () => {
-    allowRecognitionRestart = false;
-    stopCurrentSpeech(); // Stop TTS if playing or pending
-    stopRecognition();
-    setUIMode('text');
-});
-
-// --- Initial Setup ---
-if (SpeechRecognition) {
-    checkMicPermission();
-}
-setUIMode('text');
-
-// --- Initial Greeting Message (Text Mode) ---
-const initialGreeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
-addMessageToChat(initialGreeting, 'bot');
