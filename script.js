@@ -225,6 +225,9 @@ async function handleSend(text, isFromVoice = false) {
     if (!isFromVoice) {
         addMessageToChat(text, 'user');
         textInput.value = '';
+        // Manually trigger height reset after clearing value
+        textInput.style.height = 'auto';
+        textInput.style.height = textInput.scrollHeight + 'px';
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
@@ -431,6 +434,13 @@ function setUIMode(newMode) {
 // --- Attach Event Listeners ---
 sendButton.addEventListener('click', () => handleSend(textInput.value));
 textInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') handleSend(textInput.value); });
+
+// Auto-resize textarea based on content
+textInput.addEventListener('input', () => {
+    textInput.style.height = 'auto'; // Reset height to recalculate
+    textInput.style.height = textInput.scrollHeight + 'px'; // Set height based on content scroll height
+});
+
 
 enterVoiceModeButton.addEventListener('click', async () => {
     if (!recognition || currentMode !== 'text') return;
