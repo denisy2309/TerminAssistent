@@ -152,7 +152,8 @@ h1 {
     margin-right: 10px;
     font-size: 1rem;
     resize: none; /* Prevent resizing */
-    overflow: hidden; /* Hide overflow */
+    overflow-y: auto; /* Allow vertical scrolling */
+    max-height: 40px; /* Fixed height */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     word-wrap: break-word; /* Enable word wrapping */
