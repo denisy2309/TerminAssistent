@@ -138,6 +138,7 @@ async function handleSend(text, isFromVoice = false) {
         textInput.style.removeProperty('height');
         textInput.style.height = 'auto';
         textInput.blur(); // <-- Added to reset focus/height correctly
+        textInput.focus(); // <-- Added to refocus the input field
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
