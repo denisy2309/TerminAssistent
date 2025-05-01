@@ -61,6 +61,26 @@ h1 {
     background-color: #f8f9fa; /* Very light grey */
 }
 
+/* Custom Scrollbar Styles */
+#chat-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-output::-webkit-scrollbar-track {
+    background: #eef2f7; /* Match body background */
+    border-radius: 10px;
+}
+
+#chat-output::-webkit-scrollbar-thumb {
+    background: #adb5bd; /* Muted grey */
+    border-radius: 10px;
+}
+
+#chat-output::-webkit-scrollbar-thumb:hover {
+    background: #6c757d; /* Darker grey on hover */
+}
+
+
 /* --- Info Box Styles (Inside Chat Container) --- */
 #info-box {
     position: absolute; /* Position relative to chat-container */
@@ -151,9 +171,10 @@ h1 {
     border-radius: 20px; /* Rounded input */
     margin-right: 10px;
     font-size: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match output font */
     resize: none; /* Prevent resizing */
     overflow-y: auto; /* Allow vertical scrolling */
-    max-height: 40px; /* Fixed height */
+    max-height: 80px; /* Fixed height */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     word-wrap: break-word; /* Enable word wrapping */
