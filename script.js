@@ -227,9 +227,7 @@ async function handleSend(text, isFromVoice = false) {
         textInput.value = '';
         // Remove inline height style to allow CSS/rows attribute to reset height
         textInput.style.removeProperty('height');
-        textInput.scrollTop = 0; // Reset scroll position
-        textInput.blur(); 
-        textInput.focus(); 
+        textInput.style.height = 'auto';
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
@@ -459,6 +457,20 @@ textInput.addEventListener('input', () => {
 enterVoiceModeButton.addEventListener('click', async () => {
     if (!recognition || currentMode !== 'text') return;
     setUIMode('voiceIdle');
+
+    // Attempt to unlock audio for iOS Safari
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+        console.log("Silent audio played to attempt unlocking audio.");
+    } catch (e) {
+        console.warn("Could not play silent audio:", e);
+    }
+
     const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
     const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
     try {
