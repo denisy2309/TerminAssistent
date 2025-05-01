@@ -28,6 +28,7 @@ let allowRecognitionRestart = false;
 let restartTimeoutId = null;
 let currentAudio = null;
 let typingIndicatorElement = null;
+let elevenLabsController = null; // AbortController for ElevenLabs fetch
 
 // --- Speech Recognition (STT - Web Speech API) ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -169,6 +170,12 @@ function stopCurrentSpeech() {
         currentAudio.src = '';
         currentAudio = null;
     }
+    // Also abort any pending fetch request
+    if (elevenLabsController) {
+        console.log("Aborting pending ElevenLabs fetch request.");
+        elevenLabsController.abort();
+        elevenLabsController = null;
+    }
 }
 
 function stopRecognition() {
@@ -247,9 +254,9 @@ async function handleSend(text, isFromVoice = false) {
             addMessageToChat(botResponseText, 'bot');
         } else {
             const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
-            if (apiKeyToUse) { // Check if a key exists for the selected language
+            if (apiKeyToUse) {
                  try {
-                     await speakText(botResponseText, apiKeyToUse); // Pass the correct API key
+                     await speakText(botResponseText, apiKeyToUse);
                      if (currentMode === 'voiceActive') {
                          console.log("TTS finished, enabling restart flag.");
                          allowRecognitionRestart = true;
@@ -289,9 +296,12 @@ async function handleSend(text, isFromVoice = false) {
     }
 }
 
-function speakText(text, apiKey) { // Added apiKey parameter
+function speakText(text, apiKey) {
     return new Promise(async (resolve, reject) => {
-        stopCurrentSpeech();
+        stopCurrentSpeech(); // Stop any previous speech or pending request
+
+        elevenLabsController = new AbortController(); // Create a new controller for this request
+        const signal = elevenLabsController.signal;
 
         const selectedLang = languageSelect.value;
         let voiceId;
@@ -302,7 +312,7 @@ function speakText(text, apiKey) { // Added apiKey parameter
         } else if (selectedLang.startsWith('ar')) {
             voiceId = 'VMy40598IGgDeaOE8phq'; // Using the first Arabic ID again
         } else {
-            voiceId = ELEVENLABS_VOICE_ID_DEFAULT; // Use default German ID constant
+            voiceId = ELEVENLABS_VOICE_ID_DEFAULT;
         }
         console.log(`Using Voice ID: ${voiceId} for language: ${selectedLang}`);
 
@@ -313,7 +323,7 @@ function speakText(text, apiKey) { // Added apiKey parameter
         const headers = {
             'Accept': 'audio/mpeg',
             'Content-Type': 'application/json',
-            'xi-api-key': apiKey, // Use the passed API key
+            'xi-api-key': apiKey,
         };
         const data = {
             text: text,
@@ -328,7 +338,7 @@ function speakText(text, apiKey) { // Added apiKey parameter
             voiceStatusDisplay.className = 'speaking';
             console.log("Set voiceStatusDisplay class to: speaking");
 
-            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data) });
+            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data), signal: signal }); // Pass the signal
 
             if (!response.ok) {
                 let errorBody = 'Unknown error';
@@ -349,6 +359,7 @@ function speakText(text, apiKey) { // Added apiKey parameter
                 console.log('Audio playback finished.');
                 URL.revokeObjectURL(audioUrl);
                 currentAudio = null;
+                elevenLabsController = null; // Clear controller after successful playback
                 resolve();
             };
             currentAudio.onerror = (err) => {
@@ -358,17 +369,26 @@ function speakText(text, apiKey) { // Added apiKey parameter
                 statusElement.className = 'error';
                 voiceStatusDisplay.className = 'error';
                 currentAudio = null;
+                elevenLabsController = null; // Clear controller on playback error
                 reject(new Error('Audio playback error'));
             };
             currentAudio.play();
         } catch (error) {
-            console.error('Error calling ElevenLabs API:', error);
-            statusElement.textContent = 'TTS API Fehler.';
-            statusElement.className = 'error';
-            voiceStatusDisplay.className = 'error';
-            currentAudio = null;
-            console.error("ElevenLabs API Error Object:", error);
-            reject(error);
+            // Check if the error was due to abortion
+            if (error.name === 'AbortError') {
+                console.log('ElevenLabs fetch request aborted.');
+                elevenLabsController = null; // Clear controller after abortion
+                resolve(); // Resolve the promise as the action was successful (aborted)
+            } else {
+                console.error('Error calling ElevenLabs API:', error);
+                statusElement.textContent = 'TTS API Fehler.';
+                statusElement.className = 'error';
+                voiceStatusDisplay.className = 'error';
+                currentAudio = null;
+                elevenLabsController = null; // Clear controller on other errors
+                console.error("ElevenLabs API Error Object:", error);
+                reject(error);
+            }
         }
     });
 }
@@ -383,7 +403,10 @@ function setUIMode(newMode) {
     switch (newMode) {
         case 'text':
             document.body.classList.add('text-mode');
-            if (oldMode !== 'text') { stopCurrentSpeech(); stopRecognition(); }
+            if (oldMode !== 'text') {
+                 stopCurrentSpeech(); // Stop speech and pending requests
+                 stopRecognition();
+            }
             allowRecognitionRestart = false; isRecognizing = false;
             statusElement.style.display = 'none';
             voiceStatusDisplay.className = '';
@@ -393,7 +416,10 @@ function setUIMode(newMode) {
             statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
             statusElement.className = '';
             voiceStatusDisplay.className = 'idle';
-            if (oldMode !== 'voiceIdle') { stopCurrentSpeech(); stopRecognition(); }
+            if (oldMode !== 'voiceIdle') {
+                 stopCurrentSpeech(); // Stop speech and pending requests
+                 stopRecognition();
+            }
             allowRecognitionRestart = false; isRecognizing = false;
             break;
         case 'voiceActive':
@@ -413,7 +439,7 @@ enterVoiceModeButton.addEventListener('click', async () => {
     const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
     try {
         console.log("Attempting to speak greeting on entering voice mode...");
-        await speakText(greeting, apiKeyToUse); // Pass correct key for greeting
+        await speakText(greeting, apiKeyToUse);
         console.log("Greeting finished speaking.");
         if (currentMode === 'voiceIdle') {
              statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
@@ -439,14 +465,14 @@ stopConversationButton.addEventListener('click', () => {
     if (currentMode !== 'voiceActive') return;
     console.log("Stop conversation button clicked");
     allowRecognitionRestart = false;
-    stopCurrentSpeech();
+    stopCurrentSpeech(); // Stop TTS if playing or pending
     stopRecognition();
     setUIMode('voiceIdle');
 });
 
 backToTextButton.addEventListener('click', () => {
     allowRecognitionRestart = false;
-    stopCurrentSpeech();
+    stopCurrentSpeech(); // Stop TTS if playing or pending
     stopRecognition();
     setUIMode('text');
 });
@@ -455,7 +481,7 @@ backToTextButton.addEventListener('click', () => {
 if (SpeechRecognition) {
     checkMicPermission();
 }
-setUIMode('text'); // Set initial UI mode
+setUIMode('text');
 
 // --- Initial Greeting Message (Text Mode) ---
 const initialGreeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
