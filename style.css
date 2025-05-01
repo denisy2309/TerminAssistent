@@ -155,6 +155,7 @@ h1 {
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     word-wrap: break-word; /* Enable word wrapping */
     overflow-wrap: break-word; /* Ensure long words break */
+    min-width: 0; /* Allow the item to shrink below its content size */
 }
 #text-input:focus {
     border-color: #80bdff;
