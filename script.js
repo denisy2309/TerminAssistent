@@ -444,10 +444,7 @@ function setUIMode(newMode) {
     switch (newMode) {
         case 'text':
             document.body.classList.add('text-mode');
-            if (oldMode !== 'text') {
-                 stopCurrentSpeech(); // Stop speech and pending requests
-                 stopRecognition();
-            }
+            // Stops are handled by the button listeners triggering this mode change
             allowRecognitionRestart = false; isRecognizing = false;
             statusElement.style.display = 'none';
             voiceStatusDisplay.className = '';
@@ -457,10 +454,7 @@ function setUIMode(newMode) {
             statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
             statusElement.className = '';
             voiceStatusDisplay.className = 'idle';
-            if (oldMode !== 'voiceIdle') {
-                 stopCurrentSpeech(); // Stop speech and pending requests
-                 stopRecognition();
-            }
+            // Stops are handled by the button listeners triggering this mode change
             allowRecognitionRestart = false; isRecognizing = false;
             break;
         case 'voiceActive':
@@ -534,9 +528,10 @@ stopConversationButton.addEventListener('click', () => {
     if (currentMode !== 'voiceActive') return;
     console.log("Stop conversation button clicked");
     allowRecognitionRestart = false;
-    stopCurrentSpeech(); // Stop TTS if playing or pending
-    stopRecognition();
+    // Set mode to voiceIdle *before* stopping recognition to avoid race condition with onerror
     setUIMode('voiceIdle');
+    stopCurrentSpeech(); // Stop TTS if playing or pending
+    stopRecognition(); // Stop STT if active (onerror check will now see 'voiceIdle')
 });
 
 backToTextButton.addEventListener('click', () => {
