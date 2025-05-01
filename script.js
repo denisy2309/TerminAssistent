@@ -26,9 +26,11 @@ let recognition;
 let isRecognizing = false;
 let allowRecognitionRestart = false;
 let restartTimeoutId = null;
-let currentAudio = null;
+let currentAudio = null; // Keep for potential fallback or other uses? Maybe remove later.
 let typingIndicatorElement = null;
 let elevenLabsController = null; // AbortController for ElevenLabs fetch
+let audioContext = null; // Web Audio API context
+let currentAudioSource = null; // Web Audio API source node
 
 // --- Speech Recognition (STT - Web Speech API) ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -164,8 +166,19 @@ function startRecognition() {
 
 // Function to stop current TTS playback
 function stopCurrentSpeech() {
-    if (currentAudio) {
-        console.log("Stopping current speech playback.");
+    // Stop Web Audio API source node
+    if (currentAudioSource) {
+        console.log("Stopping current Web Audio playback.");
+        try {
+            currentAudioSource.stop();
+        } catch (e) {
+            console.warn("Error stopping audio source:", e); // Might throw if already stopped
+        }
+        currentAudioSource = null;
+    }
+     // Stop HTML Audio element (if used as fallback, keep for now)
+     if (currentAudio) {
+        console.log("Stopping current HTML Audio playback.");
         currentAudio.pause();
         currentAudio.src = '';
         currentAudio = null;
@@ -303,6 +316,21 @@ function speakText(text, apiKey) {
     return new Promise(async (resolve, reject) => {
         stopCurrentSpeech(); // Stop any previous speech or pending request
 
+        // Ensure AudioContext is available and resumed
+        if (!audioContext) {
+            console.error("AudioContext not initialized.");
+            return reject(new Error("AudioContext not initialized."));
+        }
+        if (audioContext.state === 'suspended') {
+            try {
+                await audioContext.resume();
+                console.log("AudioContext resumed for playback.");
+            } catch (e) {
+                console.error("Failed to resume AudioContext for playback:", e);
+                return reject(new Error("Failed to resume AudioContext."));
+            }
+        }
+
         elevenLabsController = new AbortController(); // Create a new controller for this request
         const signal = elevenLabsController.signal;
 
@@ -324,7 +352,7 @@ function speakText(text, apiKey) {
 
         const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
         const headers = {
-            'Accept': 'audio/mpeg',
+            'Accept': 'audio/mpeg', // Keep this for the API request
             'Content-Type': 'application/json',
             'xi-api-key': apiKey,
         };
@@ -341,7 +369,7 @@ function speakText(text, apiKey) {
             voiceStatusDisplay.className = 'speaking';
             console.log("Set voiceStatusDisplay class to: speaking");
 
-            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data), signal: signal }); // Pass the signal
+            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(data), signal: signal });
 
             if (!response.ok) {
                 let errorBody = 'Unknown error';
@@ -349,56 +377,47 @@ function speakText(text, apiKey) {
                 throw new Error(`ElevenLabs request failed: ${response.status} ${errorBody}`);
             }
 
-            const audioBlob = await response.blob();
-            if (selectedLang.startsWith('ar')) {
-                console.log(`Arabic TTS Blob received: Size=${audioBlob.size}, Type=${audioBlob.type}`);
-                if (audioBlob.size < 100) { console.warn("Received very small audio blob for Arabic."); }
-            }
-            const audioUrl = URL.createObjectURL(audioBlob);
-            currentAudio = new Audio(audioUrl);
-            console.log('Playing audio from ElevenLabs');
+            const audioData = await response.arrayBuffer(); // Get data as ArrayBuffer
+            console.log("Received audio data, decoding...");
 
-            currentAudio.onended = () => {
-                console.log('Audio playback finished.');
-                URL.revokeObjectURL(audioUrl);
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller after successful playback
-                resolve();
-            };
-            currentAudio.onerror = (err) => {
-                console.error('Audio playback error:', err);
-                URL.revokeObjectURL(audioUrl);
-                statusElement.textContent = 'Audio Wiedergabefehler.';
+            // Decode the audio data using Web Audio API
+            audioContext.decodeAudioData(audioData, (buffer) => {
+                console.log("Audio decoded successfully.");
+                currentAudioSource = audioContext.createBufferSource();
+                currentAudioSource.buffer = buffer;
+                currentAudioSource.connect(audioContext.destination);
+
+                currentAudioSource.onended = () => {
+                    console.log('Web Audio playback finished.');
+                    currentAudioSource = null;
+                    elevenLabsController = null;
+                    resolve();
+                };
+
+                console.log("Starting Web Audio playback.");
+                currentAudioSource.start(0);
+
+            }, (decodeError) => {
+                console.error('Error decoding audio data:', decodeError);
+                statusElement.textContent = 'Audio Dekodierungsfehler.';
                 statusElement.className = 'error';
                 voiceStatusDisplay.className = 'error';
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller on playback error
-                reject(new Error('Audio playback error'));
-            };
-            currentAudio.play().catch(playError => {
-                console.error('Audio play() failed:', playError);
-                URL.revokeObjectURL(audioUrl);
-                statusElement.textContent = 'Audio Wiedergabefehler (Play).';
-                statusElement.className = 'error';
-                voiceStatusDisplay.className = 'error';
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller on playback error
-                reject(new Error('Audio play() failed'));
+                elevenLabsController = null;
+                reject(new Error('Error decoding audio data'));
             });
+
         } catch (error) {
-            // Check if the error was due to abortion
             if (error.name === 'AbortError') {
                 console.log('ElevenLabs fetch request aborted.');
-                elevenLabsController = null; // Clear controller after abortion
-                resolve(); // Resolve the promise as the action was successful (aborted)
+                elevenLabsController = null;
+                resolve(); // Resolve as the action was intentionally aborted
             } else {
-                console.error('Error calling ElevenLabs API:', error);
-                statusElement.textContent = 'TTS API Fehler.';
+                console.error('Error calling ElevenLabs API or processing audio:', error);
+                statusElement.textContent = 'TTS API/Audio Fehler.';
                 statusElement.className = 'error';
                 voiceStatusDisplay.className = 'error';
-                currentAudio = null;
-                elevenLabsController = null; // Clear controller on other errors
-                console.error("ElevenLabs API Error Object:", error);
+                elevenLabsController = null;
+                console.error("ElevenLabs/Audio Error Object:", error);
                 reject(error);
             }
         }
@@ -456,21 +475,25 @@ textInput.addEventListener('input', () => {
 
 enterVoiceModeButton.addEventListener('click', async () => {
     if (!recognition || currentMode !== 'text') return;
-    setUIMode('voiceIdle');
 
-    // Attempt to unlock audio for iOS Safari
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const buffer = audioContext.createBuffer(1, 1, 22050);
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioContext.destination);
-        source.start(0);
-        console.log("Silent audio played to attempt unlocking audio.");
-    } catch (e) {
-        console.warn("Could not play silent audio:", e);
+    // Initialize or resume AudioContext on user gesture
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log("AudioContext created.");
+        } catch (e) {
+            console.error("Error creating AudioContext:", e);
+            alert("Web Audio API wird von diesem Browser nicht unterstützt.");
+            return;
+        }
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+            console.log("AudioContext resumed successfully.");
+        }).catch(e => console.warn("AudioContext resume failed:", e));
     }
 
+    setUIMode('voiceIdle');
     const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
     const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
     try {
