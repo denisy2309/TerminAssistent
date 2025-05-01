@@ -172,7 +172,7 @@ h1 {
     margin-right: 10px;
     font-size: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Match output font */
-    resize: none; /* Prevent resizing */
+    resize: vertical; /* Prevent resizing */
     overflow-y: auto; /* Allow vertical scrolling */
     max-height: 80px; /* Fixed height */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
