@@ -228,8 +228,8 @@ async function handleSend(text, isFromVoice = false) {
         // Remove inline height style to allow CSS/rows attribute to reset height
         textInput.style.removeProperty('height');
         textInput.scrollTop = 0; // Reset scroll position
-        // textInput.blur(); // Removing potentially interfering lines
-        // textInput.focus(); // Removing potentially interfering lines
+        textInput.blur(); 
+        textInput.focus(); 
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
