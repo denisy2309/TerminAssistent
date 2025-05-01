@@ -435,7 +435,10 @@ function setUIMode(newMode) {
 
 // --- Attach Event Listeners ---
 sendButton.addEventListener('click', () => handleSend(textInput.value));
-textInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') handleSend(textInput.value); });
+textInput.addEventListener('keypress', (event) => { if (event.key === 'Enter') {
+    event.preventDefault();
+    handleSend(textInput.value);
+} });
 
 // Auto-resize textarea based on content
 textInput.addEventListener('input', () => {
