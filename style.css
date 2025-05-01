@@ -174,7 +174,7 @@ button {
     margin-left: 8px;
     font-size: 0.95rem;
     transition: background-color 0.2s ease-in-out, transform 0.1s ease;
-    white-space: nowrap; /* Prevent text wrapping */
+    /* white-space: nowrap; /* Prevent text wrapping */
 }
 
 button:hover {
