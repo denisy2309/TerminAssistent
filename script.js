@@ -225,9 +225,9 @@ async function handleSend(text, isFromVoice = false) {
     if (!isFromVoice) {
         addMessageToChat(text, 'user');
         textInput.value = '';
-        // Manually trigger height reset after clearing value
+        // Remove inline height style and then set to auto to force recalculation
+        textInput.style.removeProperty('height');
         textInput.style.height = 'auto';
-        textInput.style.height = textInput.scrollHeight + 'px';
         showTypingIndicator(true);
     } else {
         statusElement.textContent = 'Denke nach...';
