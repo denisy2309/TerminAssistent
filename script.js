@@ -1,6 +1,6 @@
 // --- Configuration ---
 const N8N_WEBHOOK_URL = 'https://webhook-processor-production-ef3e.up.railway.app/webhook/7bc992d1-2857-4cb6-b708-b62c162c3f40';
-const ELEVENLABS_API_KEY_DEFAULT = 'sk_97d184f2d240feeb9cabeb7e0425f13309986590adaea795'; // Default key (German, English, Turkish)
+const ELEVENLABS_API_KEY_DEFAULT = 'sk_7666b5146c9feea10a685abcaa0d034bd89d87105875f411'; // Default key (German, English, Turkish)
 const ELEVENLABS_API_KEY_ARABIC = 'sk_831124d925285659dad240555a312c42cac868c94bc01e35'; // Arabic-specific key
 const ELEVENLABS_VOICE_ID_DEFAULT = 'kaGxVtjLwllv1bi2GFag'; // Default German Voice ID
 
