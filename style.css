@@ -194,6 +194,11 @@ textarea#text-input {
   scrollbar-width: none;  /* Firefox */
 }
 
+#text-input {
+    -webkit-overflow-scrolling: touch;
+    touch-action: auto;
+}
+
 #text-input:focus {
     border-color: #80bdff;
     outline: 0;
