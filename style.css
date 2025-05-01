@@ -151,6 +151,8 @@ h1 {
     border-radius: 20px; /* Rounded input */
     margin-right: 10px;
     font-size: 1rem;
+    resize: none; /* Prevent resizing */
+    overflow: hidden; /* Hide overflow */
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     word-wrap: break-word; /* Enable word wrapping */
