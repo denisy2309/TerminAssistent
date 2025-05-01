@@ -414,3 +414,105 @@ body.voice-mode-active #input-area {
     justify-content: space-around;
     align-items: center;
 }
+
+/* --- Responsive Design --- */
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* Reduce padding on smaller screens */
+    }
+
+    h1 {
+        font-size: 1.8rem; /* Reduce heading size */
+        margin-bottom: 15px;
+    }
+
+    #chat-container {
+        height: calc(100vh - 80px); /* Adjust height for smaller screens */
+        max-height: unset; /* Remove max height constraint */
+        border-radius: 8px; /* Less rounded corners */
+    }
+
+    #chat-output {
+        padding: 15px;
+        padding-top: 60px; /* Adjust padding top */
+    }
+
+    #info-box {
+        top: 10px;
+        left: 10px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        max-width: calc(100% - 20px);
+    }
+
+    .message {
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        border-radius: 15px; /* Less rounded messages */
+        max-width: 85%; /* Allow messages to take more width */
+    }
+
+    .user-message {
+        border-bottom-right-radius: 3px;
+    }
+
+    .bot-message {
+        border-bottom-left-radius: 3px;
+    }
+
+    #input-area {
+        padding: 10px 15px;
+        flex-direction: column; /* Stack input elements vertically */
+        align-items: stretch; /* Stretch items to fill width */
+        gap: 10px; /* Increase gap */
+    }
+
+    #language-select {
+        width: 100%; /* Full width */
+        margin-right: 0;
+        margin-bottom: 5px; /* Space below select */
+    }
+
+    #text-input {
+        margin-right: 0;
+        width: 100%; /* Full width */
+    }
+
+    button {
+        width: 100%; /* Full width */
+        margin-left: 0;
+        padding: 12px 18px; /* Adjust button padding */
+    }
+
+    #input-area button {
+        margin-left: 0; /* Remove left margin for buttons in stacked layout */
+    }
+
+    .typing-indicator {
+        padding: 6px 8px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+        border-bottom-left-radius: 3px;
+    }
+
+    .typing-indicator span {
+        height: 6px;
+        width: 6px;
+        margin: 0 1px;
+    }
+
+    #status {
+        margin-left: 0;
+        text-align: center;
+        width: 100%; /* Full width */
+        margin-top: 5px; /* Space above status */
+    }
+
+    #voice-status-display {
+        padding-top: 60px; /* Adjust padding top */
+    }
+
+    #voice-status-display .indicator {
+        font-size: 3rem; /* Smaller icons */
+    }
+}
