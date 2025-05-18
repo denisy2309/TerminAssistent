@@ -206,16 +206,17 @@ function stopCurrentSpeech() {
 }
 
 function stopRecognition() {
+    isRecognizing = false; // Set flag to false immediately
      if (restartTimeoutId) {
         clearTimeout(restartTimeoutId);
         restartTimeoutId = null;
      }
-     if (recognition && isRecognizing) {
+     if (recognition) { // Check if recognition object exists
         console.log("Attempting recognition.stop()...");
         allowRecognitionRestart = false;
         recognition.stop();
     }
-    isRecognizing = false;
+    // isRecognizing is already set to false
 }
 
 // --- Core Functions ---
