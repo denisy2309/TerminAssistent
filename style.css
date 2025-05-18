@@ -369,10 +369,10 @@ button:disabled {
 }
 
 /* Show the active status text */
-#voice-status-display.listening #status-text-listening,
-#voice-status-display.thinking #status-text-thinking,
-#voice-status-display.speaking #status-text-speaking,
-#voice-status-display.idle #status-text-idle {
+#voice-status-display.listening span#status-text-listening,
+#voice-status-display.thinking span#status-text-thinking,
+#voice-status-display.speaking span#status-text-speaking,
+#voice-status-display.idle span#status-text-idle {
     display: inline-block; /* Show the text when active */
 }
 
