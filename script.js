@@ -498,22 +498,27 @@ enterVoiceModeButton.addEventListener('click', async () => {
     }
 
     setUIMode('voiceIdle');
+    startConversationButton.disabled = true; // Disable button before speaking
     const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
-    const apiKeyToUse = languageSelect.value.startsWith('ar') ? ELEVENLABS_API_KEY_ARABIC : ELEVENLABS_API_KEY_DEFAULT;
+    const apiKeyToUse = languageSelect.value.startsWith('ar') || languageSelect.value.startsWith('ru') || languageSelect.value.startsWith('uk-UA')
+                                ? ELEVENLABS_API_KEY_ARABIC
+                                : ELEVENLABS_API_KEY_DEFAULT;
     try {
         console.log("Attempting to speak greeting on entering voice mode...");
         await speakText(greeting, apiKeyToUse);
         console.log("Greeting finished speaking.");
-        if (currentMode === 'voiceIdle') {
+        if (currentMode === 'voiceIdle') { // Check if still in voiceIdle
              statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
              statusElement.className = '';
              voiceStatusDisplay.className = 'idle';
+             startConversationButton.disabled = false; // Enable button on success
         }
     } catch (error) {
          console.error("Error during initial greeting:", error);
          statusElement.textContent = 'Fehler bei Begrüßung. Zurück zum Text?';
          statusElement.className = 'error';
          voiceStatusDisplay.className = 'error';
+         startConversationButton.disabled = false; // Ensure button is enabled on error too
     }
 });
 
