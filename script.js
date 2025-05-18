@@ -16,9 +16,16 @@ const enterVoiceModeButton = document.getElementById('enter-voice-mode-button');
 const startConversationButton = document.getElementById('start-conversation-button');
 const stopConversationButton = document.getElementById('stop-conversation-button');
 const backToTextButton = document.getElementById('back-to-text-button');
-const statusElement = document.getElementById('status');
+const statusElement = document.getElementById('status'); // Keep for general status messages
 const voiceStatusDisplay = document.getElementById('voice-status-display');
 const languageSelect = document.getElementById('language-select');
+
+// New status text elements
+const statusTextListening = document.getElementById('status-text-listening');
+const statusTextThinking = document.getElementById('status-text-thinking');
+const statusTextSpeaking = document.getElementById('status-text-speaking');
+const statusTextIdle = document.getElementById('status-text-idle');
+
 
 // --- State Variables ---
 let currentMode = 'text';
@@ -45,8 +52,11 @@ if (SpeechRecognition) {
         console.log('Speech recognition started');
         isRecognizing = true;
         allowRecognitionRestart = false;
-        statusElement.textContent = 'Höre zu...';
-        statusElement.className = '';
+        statusTextListening.textContent = 'Sag dem Assistenten etwas'; // Set listening text
+        statusTextThinking.textContent = ''; // Clear thinking text
+        statusTextSpeaking.textContent = ''; // Clear speaking text
+        statusTextIdle.textContent = ''; // Clear idle text
+        statusElement.textContent = ''; // Clear general status
         voiceStatusDisplay.className = 'listening';
         if (restartTimeoutId) {
             clearTimeout(restartTimeoutId);
@@ -57,6 +67,7 @@ if (SpeechRecognition) {
     recognition.onresult = (event) => {
         const speechResult = event.results[0][0].transcript;
         console.log('Speech recognized:', speechResult);
+        statusTextListening.textContent = ''; // Clear listening text on result
         if (speechResult.trim()) {
             handleSend(speechResult, true);
         }
@@ -64,11 +75,13 @@ if (SpeechRecognition) {
 
     recognition.onspeechend = () => {
         console.log('Speech ended');
+        statusTextListening.textContent = ''; // Clear listening text on speech end
     };
 
     recognition.onend = () => {
         isRecognizing = false;
         console.log('Speech recognition ended');
+        statusTextListening.textContent = ''; // Clear listening text on recognition end
         if (currentMode === 'voiceActive' && allowRecognitionRestart) {
             console.log('Scheduling auto-restart recognition');
             restartTimeoutId = setTimeout(() => {
@@ -88,6 +101,7 @@ if (SpeechRecognition) {
         console.error('Speech recognition error:', event.error);
         isRecognizing = false;
         allowRecognitionRestart = false;
+        statusTextListening.textContent = ''; // Clear listening text on error
         if (currentMode === 'voiceActive') {
             statusElement.textContent = `Spracherkennungsfehler: ${event.error}. Erneut versuchen?`;
             statusElement.className = 'error';
@@ -243,8 +257,11 @@ async function handleSend(text, isFromVoice = false) {
         textInput.style.height = 'auto';
         showTypingIndicator(true);
     } else {
-        statusElement.textContent = 'Denke nach...';
-        statusElement.className = 'thinking';
+        statusTextListening.textContent = ''; // Clear listening text
+        statusTextThinking.textContent = 'Der Assistent denkt gerade nach'; // Set thinking text
+        statusTextSpeaking.textContent = ''; // Clear speaking text
+        statusTextIdle.textContent = ''; // Clear idle text
+        statusElement.textContent = ''; // Clear general status
         voiceStatusDisplay.className = 'thinking';
         console.log("Set voiceStatusDisplay class to: thinking");
         allowRecognitionRestart = false;
@@ -374,8 +391,11 @@ function speakText(text, apiKey) {
 
         try {
             console.log('Sending to ElevenLabs:', text);
-            statusElement.textContent = 'Spreche...';
-            statusElement.className = 'speaking';
+            statusTextListening.textContent = ''; // Clear listening text
+            statusTextThinking.textContent = ''; // Clear thinking text
+            statusTextSpeaking.textContent = 'Assistent spricht gerade'; // Set speaking text
+            statusTextIdle.textContent = ''; // Clear idle text
+            statusElement.textContent = ''; // Clear general status
             voiceStatusDisplay.className = 'speaking';
             console.log("Set voiceStatusDisplay class to: speaking");
 
@@ -401,6 +421,17 @@ function speakText(text, apiKey) {
                     console.log('Web Audio playback finished.');
                     currentAudioSource = null;
                     elevenLabsController = null;
+                    statusTextSpeaking.textContent = ''; // Clear speaking text on end
+                    // After speaking, if still in voiceActive, go back to listening state
+                    if (currentMode === 'voiceActive') {
+                         statusTextListening.textContent = 'Sag dem Assistenten etwas';
+                         voiceStatusDisplay.className = 'listening';
+                         allowRecognitionRestart = true; // Re-enable recognition restart
+                         if (!isRecognizing) {
+                             console.log("Recognition already ended, manually triggering onend for restart check.");
+                             recognition.onend();
+                         }
+                    }
                     resolve();
                 };
 
@@ -412,6 +443,7 @@ function speakText(text, apiKey) {
                 statusElement.textContent = 'Audio Dekodierungsfehler.';
                 statusElement.className = 'error';
                 voiceStatusDisplay.className = 'error';
+                statusTextSpeaking.textContent = ''; // Clear speaking text on error
                 elevenLabsController = null;
                 reject(new Error('Error decoding audio data'));
             });
@@ -420,12 +452,14 @@ function speakText(text, apiKey) {
             if (error.name === 'AbortError') {
                 console.log('ElevenLabs fetch request aborted.');
                 elevenLabsController = null;
+                statusTextSpeaking.textContent = ''; // Clear speaking text on abort
                 resolve(); // Resolve as the action was intentionally aborted
             } else {
                 console.error('Error calling ElevenLabs API or processing audio:', error);
                 statusElement.textContent = 'TTS API/Audio Fehler.';
                 statusElement.className = 'error';
                 voiceStatusDisplay.className = 'error';
+                statusTextSpeaking.textContent = ''; // Clear speaking text on error
                 elevenLabsController = null;
                 console.error("ElevenLabs/Audio Error Object:", error);
                 reject(error);
@@ -441,17 +475,24 @@ function setUIMode(newMode) {
     currentMode = newMode;
     document.body.className = '';
 
+    // Clear all status texts initially
+    statusTextListening.textContent = '';
+    statusTextThinking.textContent = '';
+    statusTextSpeaking.textContent = '';
+    statusTextIdle.textContent = '';
+    statusElement.textContent = ''; // Clear general status
+
     switch (newMode) {
         case 'text':
             document.body.classList.add('text-mode');
             // Stops are handled by the button listeners triggering this mode change
             allowRecognitionRestart = false; isRecognizing = false;
-            statusElement.style.display = 'none';
+            statusElement.style.display = 'none'; // General status hidden in text mode
             voiceStatusDisplay.className = '';
             break;
         case 'voiceIdle':
             document.body.classList.add('voice-mode-idle');
-            statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
+            statusTextIdle.textContent = 'Starte das Gespräch'; // Set idle text
             statusElement.className = '';
             voiceStatusDisplay.className = 'idle';
             // Stops are handled by the button listeners triggering this mode change
@@ -459,6 +500,7 @@ function setUIMode(newMode) {
             break;
         case 'voiceActive':
             document.body.classList.add('voice-mode-active');
+            // Status text will be set by recognition/speakText handlers
             break;
     }
 }
@@ -507,8 +549,9 @@ enterVoiceModeButton.addEventListener('click', async () => {
         console.log("Attempting to speak greeting on entering voice mode...");
         await speakText(greeting, apiKeyToUse);
         console.log("Greeting finished speaking.");
-        if (currentMode === 'voiceIdle') { // Check if still in voiceIdle
-             statusElement.textContent = 'Bereit. Klicken Sie auf Grün zum Starten.';
+        // After greeting, if still in voiceIdle, set status text and enable button
+        if (currentMode === 'voiceIdle') {
+             statusTextIdle.textContent = 'Starte das Gespräch'; // Set idle text after greeting
              statusElement.className = '';
              voiceStatusDisplay.className = 'idle';
              startConversationButton.disabled = false; // Enable button on success
