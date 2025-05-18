@@ -240,7 +240,7 @@ button:disabled {
     background-color: #218838; /* Darker Green */
 }
 #start-conversation-button:disabled {
-    background-color: #adb5bd; /* Match general disabled button color */
+    background-color: #adb5bd !important; /* Match general disabled button color, force apply */
     cursor: not-allowed;
     transform: none;
 }
