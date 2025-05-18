@@ -356,6 +356,28 @@ button:disabled {
     color: #adb5bd; /* Muted color */
 }
 
+/* Style for the status text next to emojis */
+#voice-status-display .status-text {
+    font-weight: bold; /* Make text bolder */
+    background-color: #e9ecef; /* Light grey background */
+    color: #495057; /* Darker grey text */
+    padding: 4px 8px; /* Add some padding */
+    border-radius: 12px; /* Rounded corners */
+    margin-left: 10px; /* Space from the emoji */
+    font-size: 1rem; /* Adjust font size if needed */
+    display: none; /* Hidden by default, shown by JS */
+}
+
+/* Show the active status text */
+#voice-status-display.listening #status-text-listening,
+#voice-status-display.thinking #status-text-thinking,
+#voice-status-display.speaking #status-text-speaking,
+#voice-status-display.idle #status-text-idle {
+    display: inline-block; /* Show the text when active */
+}
+
+
+
 /* Animation for indicators */
 @keyframes subtle-pulse {
   0% { transform: scale(1); opacity: 0.7; }
