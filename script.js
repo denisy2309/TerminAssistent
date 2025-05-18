@@ -271,7 +271,7 @@ async function handleSend(text, isFromVoice = false) {
         } else {
             // Determine API Key based on language
             const selectedLang = languageSelect.value;
-            const apiKeyToUse = (selectedLang.startsWith('ar') || selectedLang.startsWith('ru') || selectedLang.startsWith('ua'))
+            const apiKeyToUse = (selectedLang.startsWith('ar') || selectedLang.startsWith('ru') || selectedLang.startsWith('uk-UA'))
                                 ? ELEVENLABS_API_KEY_ARABIC
                                 : ELEVENLABS_API_KEY_DEFAULT;
 
