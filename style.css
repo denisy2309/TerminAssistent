@@ -239,6 +239,11 @@ button:disabled {
 #start-conversation-button:hover {
     background-color: #218838; /* Darker Green */
 }
+#start-conversation-button:disabled {
+    background-color: #adb5bd; /* Match general disabled button color */
+    cursor: not-allowed;
+    transform: none;
+}
 #stop-conversation-button {
      background-color: #dc3545; /* Red */
 }
