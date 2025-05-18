@@ -241,6 +241,8 @@ button:disabled {
 }
 #start-conversation-button:disabled {
     background-color: #adb5bd !important; /* Match general disabled button color, force apply */
+    color: #6c757d !important; /* Muted text color */
+    opacity: 0.6 !important; /* Reduce opacity */
     cursor: not-allowed;
     transform: none;
 }
