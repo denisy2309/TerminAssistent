@@ -27,6 +27,47 @@ const statusTextSpeaking = document.getElementById('status-text-speaking');
 const statusTextIdle = document.getElementById('status-text-idle');
 
 
+// --- Language Map for Status Texts ---
+const statusTexts = {
+    'de-DE': {
+        idle: 'Starte das Gespräch',
+        listening: 'Sag dem Assistenten etwas',
+        thinking: 'Der Assistent denkt gerade nach',
+        speaking: 'Assistent spricht gerade'
+    },
+    'en-US': {
+        idle: 'Start the conversation',
+        listening: 'Say something to the assistant',
+        thinking: 'The assistant is thinking',
+        speaking: 'Assistant is speaking'
+    },
+    'tr-TR': {
+        idle: 'Konuşmayı başlat',
+        listening: 'Asistana bir şey söyle',
+        thinking: 'Asistan düşünüyor',
+        speaking: 'Asistan konuşuyor'
+    },
+    'ar-SA': {
+        idle: 'ابدأ المحادثة',
+        listening: 'قل شيئًا للمساعد',
+        thinking: 'المساعد يفكر',
+        speaking: 'المساعد يتحدث'
+    },
+    'ru-RU': {
+        idle: 'Начать разговор',
+        listening: 'Скажите что-нибудь помощнику',
+        thinking: 'Помощник думает',
+        speaking: 'Помощник говорит'
+    },
+    'uk-UA': {
+        idle: 'Почати розмову',
+        listening: 'Скажіть щось помічнику',
+        thinking: 'Помічник думає',
+        speaking: 'Помічник говорить'
+    }
+};
+
+
 // --- State Variables ---
 let currentMode = 'text';
 let recognition;
@@ -52,7 +93,8 @@ if (SpeechRecognition) {
         console.log('Speech recognition started');
         isRecognizing = true;
         allowRecognitionRestart = false;
-        statusTextListening.textContent = 'Sag dem Assistenten etwas'; // Set listening text
+        const selectedLang = languageSelect.value;
+        statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening; // Set listening text based on language
         statusTextThinking.textContent = ''; // Clear thinking text
         statusTextSpeaking.textContent = ''; // Clear speaking text
         statusTextIdle.textContent = ''; // Clear idle text
@@ -258,8 +300,9 @@ async function handleSend(text, isFromVoice = false) {
         textInput.style.height = 'auto';
         showTypingIndicator(true);
     } else {
+        const selectedLang = languageSelect.value;
         statusTextListening.textContent = ''; // Clear listening text
-        statusTextThinking.textContent = 'Der Assistent denkt gerade nach'; // Set thinking text
+        statusTextThinking.textContent = statusTexts[selectedLang]?.thinking || statusTexts['de-DE'].thinking; // Set thinking text based on language
         statusTextSpeaking.textContent = ''; // Clear speaking text
         statusTextIdle.textContent = ''; // Clear idle text
         statusElement.textContent = ''; // Clear general status
@@ -392,9 +435,10 @@ function speakText(text, apiKey) {
 
         try {
             console.log('Sending to ElevenLabs:', text);
+            const selectedLang = languageSelect.value; // Get language again inside try for safety
             statusTextListening.textContent = ''; // Clear listening text
             statusTextThinking.textContent = ''; // Clear thinking text
-            statusTextSpeaking.textContent = 'Assistent spricht gerade'; // Set speaking text
+            statusTextSpeaking.textContent = statusTexts[selectedLang]?.speaking || statusTexts['de-DE'].speaking; // Set speaking text based on language
             statusTextIdle.textContent = ''; // Clear idle text
             statusElement.textContent = ''; // Clear general status
             voiceStatusDisplay.className = 'speaking';
@@ -425,7 +469,8 @@ function speakText(text, apiKey) {
                     statusTextSpeaking.textContent = ''; // Clear speaking text on end
                     // After speaking, if still in voiceActive, go back to listening state
                     if (currentMode === 'voiceActive') {
-                         statusTextListening.textContent = 'Sag dem Assistenten etwas';
+                         const selectedLang = languageSelect.value; // Get language again
+                         statusTextListening.textContent = statusTexts[selectedLang]?.listening || statusTexts['de-DE'].listening; // Set listening text based on language
                          voiceStatusDisplay.className = 'listening';
                          allowRecognitionRestart = true; // Re-enable recognition restart
                          if (!isRecognizing) {
@@ -483,6 +528,8 @@ function setUIMode(newMode) {
     statusTextIdle.textContent = '';
     statusElement.textContent = ''; // Clear general status
 
+    const selectedLang = languageSelect.value; // Get selected language
+
     switch (newMode) {
         case 'text':
             document.body.classList.add('text-mode');
@@ -493,7 +540,7 @@ function setUIMode(newMode) {
             break;
         case 'voiceIdle':
             document.body.classList.add('voice-mode-idle');
-            statusTextIdle.textContent = 'Starte das Gespräch'; // Set idle text
+            statusTextIdle.textContent = statusTexts[selectedLang]?.idle || statusTexts['de-DE'].idle; // Set idle text based on language
             statusElement.className = '';
             voiceStatusDisplay.className = 'idle';
             // Stops are handled by the button listeners triggering this mode change
@@ -542,7 +589,7 @@ enterVoiceModeButton.addEventListener('click', async () => {
 
     setUIMode('voiceIdle');
     startConversationButton.disabled = true; // Disable button before speaking
-    const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?";
+    const greeting = "Hallo! Wie kann ich Ihnen bei Ihrer Terminplanung helfen?"; // Greeting is always in German based on previous code
     const apiKeyToUse = languageSelect.value.startsWith('ar') || languageSelect.value.startsWith('ru') || languageSelect.value.startsWith('uk-UA')
                                 ? ELEVENLABS_API_KEY_ARABIC
                                 : ELEVENLABS_API_KEY_DEFAULT;
@@ -551,8 +598,9 @@ enterVoiceModeButton.addEventListener('click', async () => {
         await speakText(greeting, apiKeyToUse);
         console.log("Greeting finished speaking.");
         // After greeting, if still in voiceIdle, set status text and enable button
-        if (currentMode === 'voiceIdle') {
-             statusTextIdle.textContent = 'Starte das Gespräch'; // Set idle text after greeting
+        if (currentMode === 'voiceIdle') { // Check if still in voiceIdle
+             const selectedLang = languageSelect.value; // Get selected language
+             statusTextIdle.textContent = statusTexts[selectedLang]?.idle || statusTexts['de-DE'].idle; // Set idle text based on language
              statusElement.className = '';
              voiceStatusDisplay.className = 'idle';
              startConversationButton.disabled = false; // Enable button on success
